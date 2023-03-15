@@ -112,7 +112,7 @@ if __name__ == '__main__':
     selection = input()
     if selection == '0':
         print('开始训练')
-        SVMs=[]
+        SVMs = []
         for i in tqdm(range(len(train_datas))):
             SVMs.append(SvmForOneVsOne(class_num))
             SVMs[i].train(train_datas[i], train_labels[i])
@@ -124,4 +124,4 @@ if __name__ == '__main__':
             accs.append(acc)
         acc_avg = np.array(accs).sum() / len(accs)
         print(accs)
-        print('平均准确率为：' + str(acc_avg*100)+'%')
+        print('平均准确率为：' + str(acc_avg * 100) + '%')

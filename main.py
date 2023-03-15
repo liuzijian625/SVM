@@ -3,6 +3,7 @@ import os
 import numpy as np
 from sklearn.svm import SVC
 from tqdm import tqdm
+import matplotlib.pyplot as plt
 
 
 def data_select(datas, labels, label1, label2):
@@ -61,7 +62,7 @@ class SvmForOneVsOne:
         classes = np.zeros(4)
         for i in range(len(self.set_of_SVM)):
             for j in range(len(self.set_of_SVM[i])):
-                predict_class = self.set_of_SVM[i][j].predict([data])
+                predict_class = self.set_of_SVM[i][j].predict(data)
                 classes[predict_class] = classes[predict_class] + 1
         return classes.argmax()
 
@@ -75,14 +76,34 @@ class SvmForOneVsRest:
 def test(SVM, test_data, test_label):
     total_num = len(test_data)
     right = 0
+    predicts = []
     for i in range(total_num):
-        if SVM.predict(test_data[i]) == test_label[i]:
+        predicts.append(SVM.predict([test_data[i]]))
+        if SVM.predict([test_data[i]]) == test_label[i]:
             right = right + 1
     acc = right / total_num
     return acc
 
 
+def SubjectDependencyOneVsOne(class_num, C, train_datas, train_labels, test_datas, test_labels):
+    SVMs = []
+    for i in range(len(train_datas)):
+        SVMs.append(SvmForOneVsOne(class_num, C=C))
+        SVMs[i].train(train_datas[i], train_labels[i])
+    accs = []
+    for i in range(len(test_datas)):
+        acc = test(SVMs[i], test_datas[i], test_labels[i])
+        accs.append(acc)
+    acc_avg = np.array(accs).sum() / len(accs)
+    return acc_avg
+
+
 if __name__ == '__main__':
+    Cs = []
+    order = []
+    for i in range(100):
+        Cs.append((i + 1) / 10)
+    accs = []
     dir_name = './SEED-IV'
     sessions = os.listdir(dir_name)
     train_datas = []
@@ -109,19 +130,13 @@ if __name__ == '__main__':
     print("1:被试依存(one vs rest)")
     print("2:被试独立(one vs one)")
     print("3:被试独立(one vs rest)")
+    '''SVM = SVC()
+    SVM.fit(train_datas[1], train_labels[1])
+    acc = test(SVM, test_datas[1], test_labels[1])
+    print(acc)'''
     selection = input()
     if selection == '0':
-        print('开始训练')
-        SVMs = []
-        for i in tqdm(range(len(train_datas))):
-            SVMs.append(SvmForOneVsOne(class_num))
-            SVMs[i].train(train_datas[i], train_labels[i])
-        print('训练完成')
-        print('测试开始')
-        accs = []
-        for i in tqdm(range(len(test_datas))):
-            acc = test(SVMs[i], test_datas[i], test_labels[i])
+        for C in tqdm(Cs):
+            acc = SubjectDependencyOneVsOne(class_num, C, train_datas, train_labels, test_datas, test_labels)
             accs.append(acc)
-        acc_avg = np.array(accs).sum() / len(accs)
-        print(accs)
-        print('平均准确率为：' + str(acc_avg * 100) + '%')
+        plt.plot(accs, Cs)
